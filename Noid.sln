@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010 Express for Windows Phone
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Noid", "Noid\Noid\Noid.csproj", "{AF06B88B-D50E-460B-AB8B-4F6BE9F1F5ED}"
+EndProject
+Project("{96E2B04D-8817-42C6-938A-82C39BA4D311}") = "NoidContent", "Noid\NoidContent\NoidContent.contentproj", "{493380B7-80E4-413E-A0F9-A7CF242D67CE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF06B88B-D50E-460B-AB8B-4F6BE9F1F5ED}.Debug|x86.ActiveCfg = Debug|x86
+		{AF06B88B-D50E-460B-AB8B-4F6BE9F1F5ED}.Debug|x86.Build.0 = Debug|x86
+		{AF06B88B-D50E-460B-AB8B-4F6BE9F1F5ED}.Release|x86.ActiveCfg = Release|x86
+		{AF06B88B-D50E-460B-AB8B-4F6BE9F1F5ED}.Release|x86.Build.0 = Release|x86
+		{493380B7-80E4-413E-A0F9-A7CF242D67CE}.Debug|x86.ActiveCfg = Debug|x86
+		{493380B7-80E4-413E-A0F9-A7CF242D67CE}.Release|x86.ActiveCfg = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
