@@ -21,7 +21,7 @@ namespace Noid
 
         private Ball _myBall;
 
-        private Texture2D _brickTexture;        
+        private Texture2D _brickTexture;
 
         private ICollection<LineSegment> windowWalls;
 
@@ -41,30 +41,14 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(45.0f * (float) Math.PI / 180.0f, 600);
+            _myBall.VelocityFromAngle(45.0f * (float)Math.PI / 180.0f, 600);
             _myBall.Position.X = 100;
             _myBall.Position.Y = 200;
 
-            LineSegment leftWall = new LineSegment(0,
-                                                   0,
-                                                   0,
-                                                   Game.Window.ClientBounds.Height);
-
-            LineSegment rightWall = new LineSegment(Game.Window.ClientBounds.Width,
-                                                    0,
-                                                    Game.Window.ClientBounds.Width,
-                                                    Game.Window.ClientBounds.Height);
-
-            LineSegment topWall = new LineSegment(0,
-                                                  0,
-                                                  Game.Window.ClientBounds.Width,
-                                                  0);
-
-            LineSegment bottomWall = new LineSegment(0,
-                                                     Game.Window.ClientBounds.Height,
-                                                     Game.Window.ClientBounds.Width,
-                                                     Game.Window.ClientBounds.Height);
-
+            LineSegment leftWall = new LineSegment(0, 0, 0, Game.Window.ClientBounds.Height);
+            LineSegment rightWall = new LineSegment(Game.Window.ClientBounds.Width, 0, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
+            LineSegment topWall = new LineSegment(0, 0, Game.Window.ClientBounds.Width, 0);
+            LineSegment bottomWall = new LineSegment(0, Game.Window.ClientBounds.Height, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
 
             windowWalls = new List<LineSegment>();
 
@@ -101,11 +85,11 @@ namespace Noid
 
             foreach (var wall in windowWalls)
             {
-                ApplyCollision(ball, wall);    
+                ApplyCollision(ball, wall);
             }
         }
 
-        private static void ApplyCollision(Ball ball, LineSegment line)
+        private void ApplyCollision(Ball ball, LineSegment line)
         {
             if (Collision.Intersects(line, ball))
             {
