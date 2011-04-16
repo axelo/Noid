@@ -18,12 +18,19 @@ namespace Noid
     {
         private SpriteBatch _spriteBatch;
         private Texture2D _ballTexture;
-
-        private Ball _myBall;
-
         private Texture2D _brickTexture;
 
-        private ICollection<LineSegment> windowWalls;
+        private Ball _myBall;
+        private Brick _testBrick1;
+
+        private Brick _windowBrick;
+
+        private bool _ballPaused = true;
+        private bool _collisionPaused = true;
+        private bool _incBallSpeed = false;
+        private bool _decBallSpeed = false;
+
+        private KeyboardState _prevKeyState;
 
         public BallComponent(Game game)
             : base(game)
@@ -41,21 +48,15 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(45.0f * (float)Math.PI / 180.0f, 600);
+            _myBall.VelocityFromAngle(45.0f * (float)Math.PI / 180.0f, 100);
             _myBall.Position.X = 100;
-            _myBall.Position.Y = 200;
+            _myBall.Position.Y = Game.Window.ClientBounds.Height - 100;
 
-            LineSegment leftWall = new LineSegment(0, 0, 0, Game.Window.ClientBounds.Height);
-            LineSegment rightWall = new LineSegment(Game.Window.ClientBounds.Width, 0, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
-            LineSegment topWall = new LineSegment(0, 0, Game.Window.ClientBounds.Width, 0);
-            LineSegment bottomWall = new LineSegment(0, Game.Window.ClientBounds.Height, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
+            _windowBrick = new Brick(0, 0, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
 
-            windowWalls = new List<LineSegment>();
+            _testBrick1 = new Brick(200, 100, 120, 64);
 
-            windowWalls.Add(leftWall);
-            windowWalls.Add(rightWall);
-            windowWalls.Add(topWall);
-            windowWalls.Add(bottomWall);
+            _prevKeyState = Keyboard.GetState();
 
             base.Initialize();
         }
@@ -63,7 +64,7 @@ namespace Noid
         protected override void LoadContent()
         {
             _ballTexture = Game.Content.Load<Texture2D>("Images/Ball");
-
+            _brickTexture = Game.Content.Load<Texture2D>("Images/BrickTemplate");
             base.LoadContent();
         }
 
@@ -74,6 +75,23 @@ namespace Noid
         public override void Update(GameTime gameTime)
         {
             // TODO: Add your update code here
+            var keyState = Keyboard.GetState();
+
+            if (keyState.IsKeyDown(Keys.B) && _prevKeyState.IsKeyUp(Keys.B))
+                _ballPaused = !_ballPaused;
+
+            if (keyState.IsKeyDown(Keys.C) && _prevKeyState.IsKeyUp(Keys.C))
+                _collisionPaused = !_collisionPaused;
+
+            if (keyState.IsKeyDown(Keys.N) && _prevKeyState.IsKeyUp(Keys.N))
+                _decBallSpeed = !_decBallSpeed;
+
+            if (keyState.IsKeyDown(Keys.M) && _prevKeyState.IsKeyUp(Keys.M))
+                _incBallSpeed = !_incBallSpeed;
+
+
+            _prevKeyState = keyState;
+
             UpdateBall(_myBall, (float)gameTime.ElapsedGameTime.TotalSeconds);
 
             base.Update(gameTime);
@@ -81,30 +99,92 @@ namespace Noid
 
         private void UpdateBall(Ball ball, float dt)
         {
+            if (_ballPaused) return;
+
+            if (_incBallSpeed)
+            {
+                ball.Velocity *= 1.1f;
+                _incBallSpeed = false;
+            }
+
+            if (_decBallSpeed)
+            {
+                ball.Velocity *= 0.9f;
+                _decBallSpeed = false;
+            }
+
             ball.Position += ball.Velocity * dt;
 
-            foreach (var wall in windowWalls)
+            foreach (var wall in _windowBrick.Walls)
             {
-                ApplyCollision(ball, wall);
+                Vector2? collPoint = ApplyCollision(ball, wall);
+
+                if (collPoint != null)
+                {
+                    Vector2 surfaceNormal = Vector2.Normalize((Vector2)collPoint - ball.Position);
+                    ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
+                }
+
+            }
+
+            if (!_collisionPaused)
+            {
+                bool recheck;
+                bool wasCollision = false;
+                Vector2? latestCollPoint = null;
+
+                do
+                {
+                    recheck = false;
+                    foreach (var wall in _testBrick1.Walls)
+                    {
+                        Vector2? collPoint = ApplyCollision(ball, wall);
+
+                        if (collPoint != null)
+                        {
+                            recheck = true;
+                            wasCollision = true;
+                            latestCollPoint = collPoint;
+                            break;
+                        }
+                    }
+                } while (recheck);
+
+                if (wasCollision)
+                {
+                    Vector2 surfaceNormal = Vector2.Normalize((Vector2)latestCollPoint - ball.Position);
+                    ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
+                }
+
             }
         }
 
-        private void ApplyCollision(Ball ball, LineSegment line)
+        private Vector2? ApplyCollision(Ball ball, LineSegment line)
         {
             if (Collision.Intersects(line, ball))
             {
                 Vector2 intersectionPoint = Collision.NearestIntersectionPointToLineSegment(line, ball.Position);
 
-                ball.Position += Collision.DistanceToNotCollide(ball, intersectionPoint);
+                var delta = Collision.DistanceToNotCollide(ball, intersectionPoint);
 
-                Vector2 surfaceNormal = Vector2.Normalize(intersectionPoint - ball.Position);
+                Console.WriteLine(ball.Position + " + " + delta);
 
-                ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
+                ball.Position += delta;
+
+
+                return Collision.NearestIntersectionPointToLineSegment(line, ball.Position);
+                //Vector2 surfaceNormal = Vector2.Normalize(intersectionPoint - ball.Position);
+                //ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
+
+                
             }
+
+            return null;
         }
 
         public override void Draw(GameTime gameTime)
         {
+            DrawBrick(_testBrick1);
             DrawBall(_myBall);
 
             base.Draw(gameTime);
@@ -124,5 +204,24 @@ namespace Noid
             _spriteBatch.End();
         }
 
+        private void DrawBrick(Brick brick)
+        {
+            Rectangle destRect = new Rectangle(
+                (int) brick.Position.X,
+                (int) brick.Position.Y,
+                (int) brick.Size.X,
+                (int) brick.Size.Y);
+
+
+            float opacity = 1.0f;
+
+            if (_collisionPaused) opacity = 0.2f;
+
+            _spriteBatch.Begin();
+
+            _spriteBatch.Draw(_brickTexture, destRect, Color.Violet * opacity);
+
+            _spriteBatch.End();
+        }
     }
 }

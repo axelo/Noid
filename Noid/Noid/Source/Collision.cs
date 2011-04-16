@@ -50,8 +50,8 @@ namespace Noid
 
             Vector2 perimeterPoint;
 
-            perimeterPoint.X = (float) Math.Cos(collisionPointToBallCenterAngle) * ball.Radius;
-            perimeterPoint.Y = (float) Math.Sin(collisionPointToBallCenterAngle) * ball.Radius;
+            perimeterPoint.X = (float) Math.Cos(collisionPointToBallCenterAngle) * (ball.Radius + 2);
+            perimeterPoint.Y = (float) Math.Sin(collisionPointToBallCenterAngle) * (ball.Radius + 2);
 
             return delta - perimeterPoint;
         }
