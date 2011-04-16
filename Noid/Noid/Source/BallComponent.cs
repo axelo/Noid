@@ -19,6 +19,7 @@ namespace Noid
         private SpriteBatch _spriteBatch;
         private Texture2D _ballTexture;
         private Texture2D _brickTexture;
+        private Texture2D _vectorTexture;
 
         private Ball _myBall;
         private Brick _testBrick1;
@@ -48,9 +49,9 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(45.0f * (float)Math.PI / 180.0f, 100);
-            _myBall.Position.X = 100;
-            _myBall.Position.Y = Game.Window.ClientBounds.Height - 100;
+            _myBall.VelocityFromAngle(-45.0f * (float)Math.PI / 180.0f, 100);
+            _myBall.Position.X = 152;
+            _myBall.Position.Y = Game.Window.ClientBounds.Height - 494;
 
             _windowBrick = new Brick(0, 0, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
 
@@ -65,6 +66,8 @@ namespace Noid
         {
             _ballTexture = Game.Content.Load<Texture2D>("Images/Ball");
             _brickTexture = Game.Content.Load<Texture2D>("Images/BrickTemplate");
+            _vectorTexture = Game.Content.Load<Texture2D>("Images/DirectionVector");
+
             base.LoadContent();
         }
 
@@ -200,6 +203,8 @@ namespace Noid
             _spriteBatch.Begin();
 
             _spriteBatch.Draw(_ballTexture, ball.Position, null, Color.White, 0, origin, 1, SpriteEffects.None, 0);
+
+            _spriteBatch.Draw(_vectorTexture, ball.Position, null, Color.White, (float) Math.Atan2(ball.Velocity.Y, ball.Velocity.X), origin, 1, SpriteEffects.None, 0);
 
             _spriteBatch.End();
         }
