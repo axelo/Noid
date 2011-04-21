@@ -22,9 +22,9 @@ namespace Noid
         private Texture2D _vectorTexture;
 
         private Ball _myBall;
-        private Brick _testBrick1;
 
-        private Brick _windowBrick;
+        private ICollection<AABB> _wallBricks;
+        private ICollection<AABB> _levelBricks;
 
         private bool _ballPaused = true;
         private bool _collisionPaused = true;
@@ -49,13 +49,20 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(-45.0f * (float)Math.PI / 180.0f, 100);
-            _myBall.Position.X = 152;
-            _myBall.Position.Y = Game.Window.ClientBounds.Height - 494;
+            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 100);
+            _myBall.Circle.Position.X = 400;
+            _myBall.Circle.Position.Y = 220 - 28;
 
-            _windowBrick = new Brick(0, 0, Game.Window.ClientBounds.Width, Game.Window.ClientBounds.Height);
+            _levelBricks = new List<AABB>();
 
-            _testBrick1 = new Brick(200, 100, 120, 64);
+            _levelBricks.Add(new AABB(0, 0, 1, Game.Window.ClientBounds.Height));
+            _levelBricks.Add(new AABB(0, Game.Window.ClientBounds.Height, Game.Window.ClientBounds.Width, 1));
+            _levelBricks.Add(new AABB(Game.Window.ClientBounds.Width, 0, 1, Game.Window.ClientBounds.Height));
+            _levelBricks.Add(new AABB(0, 0, Game.Window.ClientBounds.Width, 1));
+
+
+            _levelBricks.Add(new AABB(200, 100, 120, 64));
+            _levelBricks.Add(new AABB(200, 220, 120, 64));
 
             _prevKeyState = Keyboard.GetState();
 
@@ -107,87 +114,59 @@ namespace Noid
             if (_incBallSpeed)
             {
                 ball.Velocity *= 1.1f;
+                ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
                 _incBallSpeed = false;
             }
 
             if (_decBallSpeed)
             {
                 ball.Velocity *= 0.9f;
+                ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
                 _decBallSpeed = false;
             }
 
-            ball.Position += ball.Velocity * dt;
+            ball.Circle.Position += ball.Velocity * dt;
 
-            foreach (var wall in _windowBrick.Walls)
-            {
-                Vector2? collPoint = ApplyCollision(ball, wall);
-
-                if (collPoint != null)
-                {
-                    Vector2 surfaceNormal = Vector2.Normalize((Vector2)collPoint - ball.Position);
-                    ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
-                }
-
-            }
-
-            if (!_collisionPaused)
-            {
-                bool recheck;
-                bool wasCollision = false;
-                Vector2? latestCollPoint = null;
-
-                do
-                {
-                    recheck = false;
-                    foreach (var wall in _testBrick1.Walls)
-                    {
-                        Vector2? collPoint = ApplyCollision(ball, wall);
-
-                        if (collPoint != null)
-                        {
-                            recheck = true;
-                            wasCollision = true;
-                            latestCollPoint = collPoint;
-                            break;
-                        }
-                    }
-                } while (recheck);
-
-                if (wasCollision)
-                {
-                    Vector2 surfaceNormal = Vector2.Normalize((Vector2)latestCollPoint - ball.Position);
-                    ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
-                }
-
-            }
+            ApplyCollision();
         }
 
-        private Vector2? ApplyCollision(Ball ball, LineSegment line)
+        private void ApplyCollision()
         {
-            if (Collision.Intersects(line, ball))
+            if (!_collisionPaused)
             {
-                Vector2 intersectionPoint = Collision.NearestIntersectionPointToLineSegment(line, ball.Position);
+                List<AABB> collidedBricks = new List<AABB>();
+                bool restartLoop;
+                do
+                {
+                    restartLoop = false;
+                    foreach (var brick in _levelBricks)
+                    {
+                        if (Collision.Intersects(brick, _myBall.Circle))
+                        {
+                            Collision.PushCircleApartFromAABB(_myBall.Circle, brick, 2.0f);
 
-                var delta = Collision.DistanceToNotCollide(ball, intersectionPoint);
+                            if (collidedBricks.Contains(brick)) break;
 
-                Console.WriteLine(ball.Position + " + " + delta);
+                            collidedBricks.Add(brick);
+                            restartLoop = true;
+                        }
+                    }
+                } while (restartLoop);
 
-                ball.Position += delta;
-
-
-                return Collision.NearestIntersectionPointToLineSegment(line, ball.Position);
-                //Vector2 surfaceNormal = Vector2.Normalize(intersectionPoint - ball.Position);
-                //ball.Velocity = Vector2.Reflect(ball.Velocity, surfaceNormal);
-
-                
+                if (collidedBricks.Count != 0)
+                {
+                    _myBall.Velocity = Vector2.Reflect(_myBall.Velocity, Collision.SurfaceNormal(_myBall.Circle, collidedBricks.Last()));
+                }
             }
-
-            return null;
         }
 
         public override void Draw(GameTime gameTime)
         {
-            DrawBrick(_testBrick1);
+            foreach (var brick in _levelBricks)
+            {
+                DrawBrick(brick);
+            }
+            
             DrawBall(_myBall);
 
             base.Draw(gameTime);
@@ -197,26 +176,25 @@ namespace Noid
         {
             Vector2 origin;
 
-            origin.X = ball.Radius;
-            origin.Y = ball.Radius;
+            origin.X = ball.Circle.Radius;
+            origin.Y = ball.Circle.Radius;
 
             _spriteBatch.Begin();
 
-            _spriteBatch.Draw(_ballTexture, ball.Position, null, Color.White, 0, origin, 1, SpriteEffects.None, 0);
+            _spriteBatch.Draw(_ballTexture, ball.Circle.Position, null, Color.White, 0, origin, 1, SpriteEffects.None, 0);
 
-            _spriteBatch.Draw(_vectorTexture, ball.Position, null, Color.White, (float) Math.Atan2(ball.Velocity.Y, ball.Velocity.X), origin, 1, SpriteEffects.None, 0);
+            _spriteBatch.Draw(_vectorTexture, ball.Circle.Position, null, Color.White, (float)Math.Atan2(ball.Velocity.Y, ball.Velocity.X), origin, 1, SpriteEffects.None, 0);
 
             _spriteBatch.End();
         }
 
-        private void DrawBrick(Brick brick)
+        private void DrawBrick(AABB brick)
         {
             Rectangle destRect = new Rectangle(
-                (int) brick.Position.X,
-                (int) brick.Position.Y,
-                (int) brick.Size.X,
-                (int) brick.Size.Y);
-
+                (int)(brick.Position.X - brick.HalfExtent.X),
+                (int)(brick.Position.Y - brick.HalfExtent.Y),
+                (int)brick.HalfExtent.X * 2,
+                (int)brick.HalfExtent.Y * 2);
 
             float opacity = 1.0f;
 

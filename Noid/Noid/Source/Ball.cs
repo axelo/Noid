@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.Xna.Framework;
 
 namespace Noid
@@ -9,8 +6,12 @@ namespace Noid
     class Ball
     {
         public Vector2 Velocity;
-        public Vector2 Position;
-        public float Radius { get { return 64 / 2; } }
+        public Circle Circle { get; private set; }
+
+        public Ball()
+        {
+            Circle = new Circle(20, 20, 32);
+        }
 
         public void VelocityFromAngle(float angle, float amplitude)
         {
