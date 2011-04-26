@@ -23,11 +23,10 @@ namespace Noid
 
         private Ball _myBall;
 
-        private ICollection<AABB> _wallBricks;
         private ICollection<AABB> _levelBricks;
 
         private bool _ballPaused = true;
-        private bool _collisionPaused = true;
+        private bool _collisionPaused = false;
         private bool _incBallSpeed = false;
         private bool _decBallSpeed = false;
 
@@ -49,7 +48,7 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 100);
+            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 800);
             _myBall.Circle.Position.X = 400;
             _myBall.Circle.Position.Y = 220 - 28;
 
@@ -61,8 +60,19 @@ namespace Noid
             _levelBricks.Add(new AABB(0, 0, Game.Window.ClientBounds.Width, 1));
 
 
-            _levelBricks.Add(new AABB(200, 100, 120, 64));
-            _levelBricks.Add(new AABB(200, 220, 120, 64));
+            _levelBricks.Add(new AABB(200, 100, 20, 20));
+            _levelBricks.Add(new AABB(200, 220, 20, 20));
+
+            _levelBricks.Add(new AABB(300, 300, 20, 20));
+            _levelBricks.Add(new AABB(20, 20, 20, 20));
+
+            Random r = new Random();
+
+            for (int i = 0; i < 20; ++i)
+            {
+                _levelBricks.Add(new AABB(r.Next(0, Game.Window.ClientBounds.Width), r.Next(0, Game.Window.ClientBounds.Height), 20, 20));
+            }
+
 
             _prevKeyState = Keyboard.GetState();
 
