@@ -144,42 +144,16 @@ namespace Noid
         {
             if (!_collisionPaused)
             {
-                List<AABB> collidedBricks = new List<AABB>();
-                bool restartLoop;
-                do
+                var collidedSurfaceNormals = Collision.CollidedSurfaceNormals(_myBall.Circle, _levelBricks);
+
+                if (collidedSurfaceNormals.Count != 0)
                 {
-                    restartLoop = false;
-                    foreach (var brick in _levelBricks)
-                    {
-                        if (Collision.Intersects(brick, _myBall.Circle))
-                        {
-                            Collision.PushCircleApartFromAABB(_myBall.Circle, brick, 1.0f);
-
-                            if (!collidedBricks.Contains(brick))
-                            {
-                                restartLoop = true;
-                                collidedBricks.Add(brick);
-                            }
-                        }
-                    }
-                } while (restartLoop);
-
-                if (collidedBricks.Count != 0)
-                {
-                    // Calculate avg. normal
-                    Vector2 surfaceNormal = new Vector2(0, 0);
-
-                    foreach (var brick in collidedBricks)
-                    {
-                        surfaceNormal += Collision.SurfaceNormal(_myBall.Circle, brick);
-                    }
-
-                    surfaceNormal /= collidedBricks.Count;
-
-                    surfaceNormal.Normalize();
+                    Vector2 surfaceNormal = Collision.AverageSurfaceNormal(collidedSurfaceNormals);
 
                     _myBall.Velocity = Vector2.Reflect(_myBall.Velocity, surfaceNormal);
-                    // _ballPaused = true;
+                    
+                    //if (collidedSurfaceNormals.Count > 1)
+                    //_ballPaused = true;
                 }
             }
         }
