@@ -48,7 +48,7 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 800);
+            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 400);
             _myBall.Circle.Position.X = 400;
             _myBall.Circle.Position.Y = 220 - 28;
 
@@ -60,7 +60,7 @@ namespace Noid
             _levelBricks.Add(new AABB(0, 0, Game.Window.ClientBounds.Width, 1));
 
 
-            _levelBricks.Add(new AABB(200, 100, 20, 20));
+            _levelBricks.Add(new AABB(200, 100, 20, 65));
             _levelBricks.Add(new AABB(200, 220, 20, 20));
 
             _levelBricks.Add(new AABB(300, 300, 20, 20));
@@ -68,9 +68,9 @@ namespace Noid
 
             Random r = new Random();
 
-            for (int i = 0; i < 20; ++i)
+            for (int i = 0; i < 40; ++i)
             {
-                _levelBricks.Add(new AABB(r.Next(0, Game.Window.ClientBounds.Width), r.Next(0, Game.Window.ClientBounds.Height), 20, 20));
+                _levelBricks.Add(new AABB(r.Next(0, Game.Window.ClientBounds.Width), r.Next(0, Game.Window.ClientBounds.Height), r.Next(20, 30), r.Next(20, 30)));
             }
 
 
@@ -124,31 +124,41 @@ namespace Noid
             if (_incBallSpeed)
             {
                 ball.Velocity *= 1.1f;
-                ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
+                //ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
                 _incBallSpeed = false;
             }
 
             if (_decBallSpeed)
             {
                 ball.Velocity *= 0.9f;
-                ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
+                //ball.Velocity = Vector2.Clamp(ball.Velocity, new Vector2(-960.0f, -960.0f), new Vector2(960.0f, 960.0f));
                 _decBallSpeed = false;
             }
 
+
+            ball.LastPosition = ball.Circle.Position;
+
             ball.Circle.Position += ball.Velocity * dt;
 
+            //Console.WriteLine("old: " + ball.LastPosition);
+            //Console.WriteLine("current: " + ball.Circle.Position);
+
             ApplyCollision();
+
+            //Console.WriteLine("new: " + ball.Circle.Position);
         }
 
         private void ApplyCollision()
         {
             if (!_collisionPaused)
             {
-                var collidedSurfaceNormals = Collision.CollidedSurfaceNormals(_myBall.Circle, _levelBricks);
+                var collidedSurfaceNormals = Collision.CollidedSurfaceNormals(_myBall.LastPosition, _myBall.Circle, _levelBricks);
 
                 if (collidedSurfaceNormals.Count != 0)
                 {
                     Vector2 surfaceNormal = Collision.AverageSurfaceNormal(collidedSurfaceNormals);
+
+
 
                     _myBall.Velocity = Vector2.Reflect(_myBall.Velocity, surfaceNormal);
                     

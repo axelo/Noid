@@ -10,14 +10,18 @@ namespace Noid
     {
         public Vector2 Position;
         public float Radius { get; private set; }
-        public float RadiusSquared { get; private set; }
+
+        public Circle(Circle copy)
+        {
+            Position = copy.Position;
+            Radius = copy.Radius;
+        }
 
         public Circle(float x, float y, float radius)
         {
             Position.X = x;
             Position.Y = y;
             Radius = radius;
-            RadiusSquared = (float) Math.Pow(radius, 2.0);
         }
     }
 }

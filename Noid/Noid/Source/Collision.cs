@@ -8,9 +8,36 @@ namespace Noid
 {
     class Collision
     {
+        static readonly ICollection<Vector2> EMPTY = new List<Vector2>();
+
+        static public ICollection<Vector2> CollidedSurfaceNormals(Vector2 lastPosition, Circle circle, ICollection<AABB> aabbs)
+        {
+            float step = 2.0f; // TODO: Smallest possible AABB-side...
+            var dirVector = Vector2.Normalize(circle.Position - lastPosition) * step;
+
+            float movedDistance = Vector2.Distance(lastPosition, circle.Position);
+
+            Circle testCircle = new Circle(lastPosition.X, lastPosition.Y, circle.Radius);
+
+            for (var samples = Math.Floor(movedDistance / step) ; samples >= 0; --samples)
+            {
+                var normals = CollidedSurfaceNormals(testCircle, aabbs);
+
+                if (normals.Count > 0)
+                {
+                    circle.Position = testCircle.Position; // TODO: ugly side effect here :P
+                    return normals;
+                }
+
+                testCircle.Position += dirVector;
+            }
+
+            return EMPTY;
+        }
+
         static public ICollection<Vector2> CollidedSurfaceNormals(Circle circle, ICollection<AABB> aabbs)
         {
-            var surfaceNormals = new List<Vector2>();
+            var surfaceNormals = EMPTY;
 
         restartLoop:
             foreach (var aabb in aabbs)
@@ -19,12 +46,13 @@ namespace Noid
 
                 if (NearestVectorIntersects(nearestVector, circle))
                 {
+                    if (surfaceNormals == EMPTY) surfaceNormals = new List<Vector2>();
+
                     var surfaceNormal = Vector2.Normalize(nearestVector);
 
                     if (!surfaceNormals.Contains(surfaceNormal))
                     {
                         surfaceNormals.Add(surfaceNormal);
-
                         PushCircleApartFromAABB(circle, nearestVector, 1.0f);
 
                         goto restartLoop;
