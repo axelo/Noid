@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
+using NoidDataTypes;
 
 namespace Noid
 {
@@ -18,8 +19,6 @@ namespace Noid
     {
         GraphicsDeviceManager graphics;
         SpriteBatch _spriteBatch;
-
-        private Texture2D _brickTexture;
 
         public NodeGame()
         {
@@ -54,9 +53,6 @@ namespace Noid
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
-            _brickTexture = Content.Load<Texture2D>("Images/BrickTemplate");
         }
 
         /// <summary>

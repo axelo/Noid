@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
+using NoidDataTypes;
 
 namespace Noid
 {
@@ -20,6 +21,7 @@ namespace Noid
         private Texture2D _ballTexture;
         private Texture2D _brickTexture;
         private Texture2D _vectorTexture;
+        private BrickData[] _brickDatas;
 
         private Ball _myBall;
 
@@ -48,9 +50,9 @@ namespace Noid
             _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
 
             _myBall = new Ball();
-            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 400);
-            _myBall.Circle.Position.X = 400;
-            _myBall.Circle.Position.Y = 220 - 28;
+            _myBall.VelocityFromAngle(180.0f * (float)Math.PI / 180.0f, 800);
+            _myBall.Circle.Position.X = 180;
+            _myBall.Circle.Position.Y = 100 + 44;
 
             _levelBricks = new List<AABB>();
 
@@ -60,18 +62,18 @@ namespace Noid
             _levelBricks.Add(new AABB(0, 0, Game.Window.ClientBounds.Width, 1));
 
 
-            _levelBricks.Add(new AABB(200, 100, 20, 65));
-            _levelBricks.Add(new AABB(200, 220, 20, 20));
+            //_levelBricks.Add(new AABB(200, 100, 20, 65));
+            //_levelBricks.Add(new AABB(200, 220, 20, 20));
 
-            _levelBricks.Add(new AABB(300, 300, 20, 20));
-            _levelBricks.Add(new AABB(20, 20, 20, 20));
+            //_levelBricks.Add(new AABB(300, 300, 20, 20));
+            //_levelBricks.Add(new AABB(20, 20, 20, 20));
 
-            Random r = new Random();
+            //Random r = new Random();
 
-            for (int i = 0; i < 40; ++i)
-            {
-                _levelBricks.Add(new AABB(r.Next(0, Game.Window.ClientBounds.Width), r.Next(0, Game.Window.ClientBounds.Height), r.Next(20, 30), r.Next(20, 30)));
-            }
+            //for (int i = 0; i < 40; ++i)
+            //{
+            //    _levelBricks.Add(new AABB(r.Next(0, Game.Window.ClientBounds.Width), r.Next(0, Game.Window.ClientBounds.Height), r.Next(20, 30), r.Next(20, 30)));
+            //}
 
 
             _prevKeyState = Keyboard.GetState();
@@ -84,6 +86,15 @@ namespace Noid
             _ballTexture = Game.Content.Load<Texture2D>("Images/Ball");
             _brickTexture = Game.Content.Load<Texture2D>("Images/BrickTemplate");
             _vectorTexture = Game.Content.Load<Texture2D>("Images/DirectionVector");
+
+            _brickDatas = Game.Content.Load<BrickData[]>("XMLFile1");
+
+            foreach (var brickData in _brickDatas)
+            {
+                var brick = new AABB(brickData.Position.X, brickData.Position.Y, brickData.Size.X, brickData.Size.Y);
+                brick.Color = brickData.Color;
+                _levelBricks.Add(brick);
+            }
 
             base.LoadContent();
         }
@@ -109,6 +120,11 @@ namespace Noid
             if (keyState.IsKeyDown(Keys.M) && _prevKeyState.IsKeyUp(Keys.M))
                 _incBallSpeed = !_incBallSpeed;
 
+            if (keyState.IsKeyDown(Keys.Up) && _prevKeyState.IsKeyUp(Keys.Up))
+                _myBall.Circle.Position.Y--;
+
+            if (keyState.IsKeyDown(Keys.Down) && _prevKeyState.IsKeyUp(Keys.Down))
+                _myBall.Circle.Position.Y++;
 
             _prevKeyState = keyState;
 
@@ -152,17 +168,36 @@ namespace Noid
         {
             if (!_collisionPaused)
             {
-                var collidedSurfaceNormals = Collision.CollidedSurfaceNormals(_myBall.LastPosition, _myBall.Circle, _levelBricks);
+                var collisionVectors = Collision.CollisionVectors(_myBall.LastPosition, _myBall.Circle, _levelBricks);
 
-                if (collidedSurfaceNormals.Count != 0)
+                if (collisionVectors.Count > 0)
                 {
-                    Vector2 surfaceNormal = Collision.AverageSurfaceNormal(collidedSurfaceNormals);
+                    IEnumerable<Vector2> vs = from cdata in collisionVectors select cdata.NearestVector;
 
+                    Vector2 avg = Collision.AverageVector(vs);
 
+                    Collision.PushCircleApartFromAABB(_myBall.Circle, avg, 0);
 
-                    _myBall.Velocity = Vector2.Reflect(_myBall.Velocity, surfaceNormal);
+                    Vector2 avgSurfaceNormal = Collision.AverageSurfaceNormal(vs);
+
+                    Console.WriteLine(avgSurfaceNormal);
+
+                    var take2 = Collision.CollisionVectors(_myBall.Circle, from cd in collisionVectors select cd.CollidedWith);
+
+                    if (take2.Count > 0)
+                    {
+                        avg = Collision.AverageVector(from cd in take2 select cd.NearestVector);
+                        avgSurfaceNormal = Collision.AverageSurfaceNormal(from cd in take2 select cd.NearestVector);
+
+                        Collision.PushCircleApartFromAABB(_myBall.Circle, avg, 0.1f);
+                    }
+
+                    Console.WriteLine(avgSurfaceNormal);
+
+                    _myBall.Velocity = Vector2.Reflect(_myBall.Velocity, avgSurfaceNormal);
                     
-                    //if (collidedSurfaceNormals.Count > 1)
+                    _myBall.LastPosition = _myBall.Circle.Position;
+
                     //_ballPaused = true;
                 }
             }
@@ -174,7 +209,7 @@ namespace Noid
             {
                 DrawBrick(brick);
             }
-            
+
             DrawBall(_myBall);
 
             base.Draw(gameTime);
@@ -204,13 +239,13 @@ namespace Noid
                 (int)brick.HalfExtent.X * 2,
                 (int)brick.HalfExtent.Y * 2);
 
-            float opacity = 1.0f;
+            float opacity = (float)1.0f;
 
             if (_collisionPaused) opacity = 0.2f;
 
             _spriteBatch.Begin();
 
-            _spriteBatch.Draw(_brickTexture, destRect, Color.Violet * opacity);
+            _spriteBatch.Draw(_brickTexture, destRect, brick.Color * opacity);
 
             _spriteBatch.End();
         }
